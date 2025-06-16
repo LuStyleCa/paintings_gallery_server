@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +21,9 @@ import com.toonborghuis.gallery.paintings_gallery.auth.repositories.ForgotPasswo
 import com.toonborghuis.gallery.paintings_gallery.auth.repositories.UserRepository;
 import com.toonborghuis.gallery.paintings_gallery.auth.services.AuthEmailService;
 import com.toonborghuis.gallery.paintings_gallery.auth.utils.ChangePassword;
+import com.toonborghuis.gallery.paintings_gallery.auth.utils.EmailRequest;
 import com.toonborghuis.gallery.paintings_gallery.auth.utils.MailBody;
+import com.toonborghuis.gallery.paintings_gallery.auth.utils.VerifyOtp;
 
 import lombok.AllArgsConstructor;
 
@@ -39,11 +40,11 @@ public class ForgotPasswordController {
     private final PasswordEncoder passwordEncoder;
 
     // send mail for email verification
-    @PostMapping("/verifyEmail/{email}")
-    public ResponseEntity<String> verifyEmail(@PathVariable String email) {
-        System.out.println("verifyEmail method called with email: " + email);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Please provide an valid email!" + email));
+    @PostMapping("/verifyEmail")
+    public ResponseEntity<String> verifyEmail(@RequestBody EmailRequest emailRequest) {
+        System.out.println("verifyEmail method called with email: " + emailRequest.email());
+        User user = userRepository.findByEmail(emailRequest.email())
+                .orElseThrow(() -> new UsernameNotFoundException("Please provide an valid email!" + emailRequest.email()));
         System.out.println("user has been found and we continue");
 
         Optional<ForgotPassword> optionalForgotPassword = forgotPasswordRepository.findByUser(user);
@@ -66,7 +67,7 @@ public class ForgotPasswordController {
 
         int otp = otpGenerator();
         MailBody mailBody = MailBody.builder()
-                .to(email)
+                .to(emailRequest.email())
                 .text("This is the OTP for your Forgot Password request : " + otp)
                 .subject("OTP for Forgot Password request")
                 .build();
@@ -83,13 +84,13 @@ public class ForgotPasswordController {
         return ResponseEntity.ok("Email sent for verification!");
     }
 
-    @PostMapping("/verifyOtp/{otp}/{email}")
-    public ResponseEntity<String> verifyOtp(@PathVariable Integer otp, @PathVariable String email) {
-        User user = userRepository.findByEmail(email)
+    @PostMapping("/verifyOtp")
+    public ResponseEntity<String> verifyOtp(@RequestBody VerifyOtp verifyOtp) {
+        User user = userRepository.findByEmail(verifyOtp.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Please provide an valid email!"));
 
-        ForgotPassword fp = forgotPasswordRepository.findByOtpAndUser(otp, user)
-                .orElseThrow(() -> new RuntimeException("Invalid OTP for email: " + email));
+        ForgotPassword fp = forgotPasswordRepository.findByOtpAndUser(verifyOtp.otp(), user)
+                .orElseThrow(() -> new RuntimeException("Invalid OTP for email: " + verifyOtp.email()));
 
         if (fp.getExpirationTime().before(Date.from(Instant.now()))) {
             forgotPasswordRepository.deleteById(fp.getFpid());
@@ -99,15 +100,15 @@ public class ForgotPasswordController {
         return ResponseEntity.ok("OTP verified!");
     }
 
-    @PostMapping("/changePassword/{email}")
-    public ResponseEntity<String> changePasswordHandler(@RequestBody ChangePassword changePassword,
-            @PathVariable String email) {
-        if (!Objects.equals(changePassword.password(), changePassword.repeatPassword())) {
+    @PostMapping("/changePassword")
+    public ResponseEntity<String> changePasswordHandler(@RequestBody ChangePassword changePassword
+            ) {
+        if (!Objects.equals(changePassword.password(), changePassword.confirmPassword())) {
             return new ResponseEntity<>("Please enter the password again!", HttpStatus.EXPECTATION_FAILED);
         }
 
         String encodedPassword = passwordEncoder.encode(changePassword.password());
-        userRepository.updatePassword(email, encodedPassword);
+        userRepository.updatePassword(changePassword.email(), encodedPassword);
 
         return ResponseEntity.ok("Password has been changed!");
     }
