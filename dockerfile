@@ -1,15 +1,26 @@
-# Use a base image with Java
-FROM openjdk:23-slim
+# ----------- Stage 1: Build the app -----------
+FROM maven:3.8.6-eclipse-temurin-17 AS build
 
-# Set the working directory inside the container
+# Set working directory in container
 WORKDIR /app
 
-# Add the fat JAR built by Maven or Gradle
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
+# Copy everything into the container
+COPY . .
 
-# Expose the port your Spring Boot app runs on
+# Build the project (skip tests if you want faster builds)
+RUN mvn clean package -DskipTests
+
+
+# ----------- Stage 2: Run the app -----------
+FROM eclipse-temurin:23-jdk-slim
+
+WORKDIR /app
+
+# Copy only the JAR from the first stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose port
 EXPOSE 8080
-    
-# Run the JAR
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+# Run the app
+ENTRYPOINT ["java", "-jar", "app.jar"]
