@@ -1,13 +1,12 @@
 # ----------- Stage 1: Build the app -----------
-FROM maven:3.8.6-eclipse-temurin-17 AS build
+FROM maven:3.9.6-eclipse-temurin-23 AS build
 
-# Set working directory in container
 WORKDIR /app
 
 # Copy everything into the container
 COPY . .
 
-# Build the project (skip tests if you want faster builds)
+# Build the Spring Boot project
 RUN mvn clean package -DskipTests
 
 
@@ -16,11 +15,11 @@ FROM eclipse-temurin:23-jdk-slim
 
 WORKDIR /app
 
-# Copy only the JAR from the first stage
+# Copy only the final JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port
+# Expose the app port
 EXPOSE 8080
 
-# Run the app
+# Run the Spring Boot app
 ENTRYPOINT ["java", "-jar", "app.jar"]
