@@ -11,7 +11,7 @@ RUN mvn clean package -DskipTests
 
 
 # ----------- Stage 2: Run the app -----------
-FROM eclipse-temurin:23-jdk-slim
+FROM eclipse-temurin:23-jdk
 
 WORKDIR /app
 
