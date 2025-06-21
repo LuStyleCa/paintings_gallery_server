@@ -36,12 +36,12 @@ public class SecurityConfigurations implements WebMvcConfigurer {
         @Override
         public void addCorsMappings(@SuppressWarnings("null") CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                                .allowedOrigins("http://localhost:3000")
+                                .allowedOrigins("http://localhost:3000", "https://paintings-gallery-client.vercel.app")
                                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                                 .allowedHeaders("Content-Type", "Authorization");
 
                 registry.addMapping("/forgotPassword/**")
-                                .allowedOrigins("http://localhost:3000")
+                                .allowedOrigins("http://localhost:3000", "https://paintings-gallery-client.vercel.app")
                                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                                 .allowedHeaders("Content-Type", "Authorization");
         }
