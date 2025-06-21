@@ -50,6 +50,7 @@ public class SecurityConfigurations implements WebMvcConfigurer {
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 return http
                                 .csrf(customizer -> customizer.disable())
+                                .cors(cors -> cors.configure(http))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/ws/**", "/api/v1/**", "/api/v1/auth/**",
                                                                 "/forgotPassword/**", "/api/v1/paintings/**",
